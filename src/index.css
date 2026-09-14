@@ -24,7 +24,6 @@
   --fill: #f2f4f7;
   --fill-2: #edeff3;
   --seg-on: #fff;
-  --today-col: #eef2fe;
   --shadow: 0 1px 2px rgba(20, 24, 35, 0.04), 0 10px 28px -18px rgba(20, 24, 35, 0.16);
   color-scheme: light;
 }
@@ -51,9 +50,8 @@
     --bg: #0f1116;
     --surface: #171a21;
     --fill: #21252e;
-    --fill-2: #21252e;
+    --fill-2: #2c313d;
     --seg-on: #333945;
-    --today-col: #17243a;
     --shadow: none;
     color-scheme: dark;
   }
@@ -154,7 +152,6 @@ a { color: var(--main); text-decoration: none; }
 .t-fail { background: var(--fail-bg); color: var(--fail); }
 .period { flex: none; width: 44px; height: 26px; border-radius: 8px; background: var(--main-10); color: var(--main-ink); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .period.solid { background: var(--main); color: #fff; }
-.period.mute { background: var(--fill-2); color: var(--ink-2); }
 
 .btn { height: 54px; border-radius: 16px; background: var(--main); color: #fff; font-size: 16.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; }
 .btn:disabled { opacity: 0.45; cursor: default; }
@@ -233,16 +230,9 @@ a { color: var(--main); text-decoration: none; }
 .tt-head span.today { color: var(--main); }
 .tt-cols { display: flex; gap: 4px; }
 .tt-col { flex: 1; min-width: 0; position: relative; height: 446px; border-radius: 8px; background: repeating-linear-gradient(to bottom, var(--fill) 0 46px, var(--surface) 46px 50px); }
-.tt-col.today { background: repeating-linear-gradient(to bottom, var(--today-col) 0 46px, var(--surface) 46px 50px); }
-.tt-block { position: absolute; left: 0; right: 0; border-radius: 8px; padding: 5px 6px; overflow: hidden; text-align: left; }
+.tt-block { position: absolute; left: 0; right: 0; border-radius: 8px; padding: 5px 6px; overflow: hidden; text-align: left; background: var(--main); color: #fff; }
 .tt-block b { display: block; font-size: 10.5px; font-weight: 800; line-height: 1.25; word-break: keep-all; overflow-wrap: anywhere; }
-.tt-block small { display: block; font-size: 9.5px; font-weight: 600; margin-top: 2px; }
-.tt-block.main { background: var(--main); color: #fff; }
-.tt-block.main small { color: var(--on-main-sub); }
-.tt-block.soft { background: var(--main-10); color: var(--main-ink); }
-.tt-block.soft small { color: #5e7ca6; }
-.tt-block.mute { background: var(--fill-2); color: var(--ink-2); }
-.tt-block.mute small { color: var(--ink-3); }
+.tt-block small { display: block; font-size: 9.5px; font-weight: 600; margin-top: 2px; color: var(--on-main-sub); }
 @media (min-width: 960px) {
   .tt-block b { font-size: 13px; }
   .tt-block small { font-size: 11.5px; }

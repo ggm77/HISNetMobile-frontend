@@ -51,9 +51,9 @@ export default function Timetable() {
                 </div>
                 <div className="tt-cols">
                   {DAYS.map((d, di) => (
-                    <div key={d} className={`tt-col ${di === TODAY ? 'today' : ''}`}>
+                    <div key={d} className="tt-col">
                       {blocks.filter((l) => l.day === di).map((l, i) => (
-                        <div key={i} className={`tt-block ${l.tone}`} style={{ top: (l.start - 1) * ROW, height: (l.end - l.start + 1) * ROW - 4 }} title={`${l.title} · ${l.room ?? ''}`}>
+                        <div key={i} className="tt-block" style={{ top: (l.start - 1) * ROW, height: (l.end - l.start + 1) * ROW - 4 }} title={`${l.title} · ${l.room ?? ''}`}>
                           <b>{l.title}</b>
                           <small>{(l.room ?? '').replace('HCA ', '')}</small>
                         </div>
@@ -68,7 +68,7 @@ export default function Timetable() {
               <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink-2)', marginBottom: 8 }}>수강 과목</div>
               {courses.map((c) => (
                 <div className="row" key={c.title} style={{ gap: 10, padding: '9px 0' }}>
-                  <span style={{ flex: 'none', width: 8, height: 8, borderRadius: 3, background: c.tone === 'main' ? 'var(--main)' : c.tone === 'soft' ? 'var(--main-soft)' : 'var(--line-3)' }} />
+                  <span style={{ flex: 'none', width: 8, height: 8, borderRadius: 3, background: 'var(--main)' }} />
                   <span className="row-title" style={{ fontSize: 14 }}>{c.title} <span className="muted" style={{ fontSize: 12 }}>{c.section}</span></span>
                   <span className="muted">{c.meta}</span>
                 </div>
@@ -90,7 +90,7 @@ export default function Timetable() {
                   </div>
                   {items.map((l, i) => (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', ...(i ? { marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line-2)' } : {}) }}>
-                      <span className={`period ${today && i === 0 ? 'solid' : l.tone === 'mute' ? 'mute' : ''}`} style={{ width: 46, height: 28, fontSize: 11.5 }}>{periodLabel(l)}</span>
+                      <span className={`period ${today && i === 0 ? 'solid' : ''}`} style={{ width: 46, height: 28, fontSize: 11.5 }}>{periodLabel(l)}</span>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 15, fontWeight: 700 }}>{l.title}</div>
                         <div className="muted" style={{ marginTop: 3 }}>{l.room} · {l.meta}</div>
