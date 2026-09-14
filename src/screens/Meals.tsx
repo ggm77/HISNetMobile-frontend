@@ -1,10 +1,33 @@
 import { useState } from 'react'
 import { meals as fetchMeals } from '../api'
 import { useFetch } from '../hooks'
-import { cornerMeals } from '../meals'
+import { cornerMeals, type CornerSlot } from '../meals'
 import { Icon, PageHeader, UnderlineTabs } from '../ui'
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토']
+
+function CornerCard({ corner, slots }: { corner: string; slots: CornerSlot[] }) {
+  const [sel, setSel] = useState(slots.find((s) => s.slot === '점심')?.slot ?? slots[0].slot)
+  const active = slots.find((s) => s.slot === sel) ?? slots[0]
+
+  return (
+    <div className="card" style={{ padding: 17 }}>
+      <div className="card-head">
+        <span style={{ fontSize: 16, fontWeight: 800 }}>{corner}</span>
+      </div>
+      {slots.length > 1 && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+          {slots.map((s) => (
+            <button key={s.slot} onClick={() => setSel(s.slot)} className={`chip ${s.slot === active.slot ? 'on' : ''}`} style={{ flex: 1, height: 34, borderRadius: 12, justifyContent: 'center', fontSize: 13 }}>{s.slot}</button>
+          ))}
+        </div>
+      )}
+      <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {active.menu.map((x, i) => <div key={i} style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.5 }}>{x}</div>)}
+      </div>
+    </div>
+  )
+}
 
 export default function Meals({ back }: { back?: () => void }) {
   const { data, loading, error, reload } = useFetch(fetchMeals, [])
@@ -48,23 +71,7 @@ export default function Meals({ back }: { back?: () => void }) {
               </div>
             )}
 
-            {corners.map((c) => (
-              <div className="card" key={c.corner} style={{ padding: 17 }}>
-                <div className="card-head">
-                  <span style={{ fontSize: 16, fontWeight: 800 }}>{c.corner}</span>
-                </div>
-                <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: c.slots.length > 1 ? 16 : 8 }}>
-                  {c.slots.map((s) => (
-                    <div key={s.slot}>
-                      {c.slots.length > 1 && <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--main-ink)', marginBottom: 6 }}>{s.slot}</div>}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {s.menu.map((x, i) => <div key={i} style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.5 }}>{x}</div>)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+            {corners.map((c) => <CornerCard key={c.corner} corner={c.corner} slots={c.slots} />)}
 
             <div className="card dashed">
               <Icon name="info" size={19} />

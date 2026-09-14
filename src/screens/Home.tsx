@@ -2,13 +2,34 @@ import { useState } from 'react'
 import { grades as fetchGrades, graduation as fetchGraduation, meals as fetchMeals, reservationsList, timetable as fetchTimetable } from '../api'
 import { useFetch } from '../hooks'
 import { boardTone, shortDate } from '../lib'
-import { cornerMeals } from '../meals'
+import { cornerMeals, type CornerSlot } from '../meals'
 import { fetchMergedFeed, type FeedNotice } from '../notices'
 import { useSession } from '../session'
 import { DAYS, flattenTimetable, periodLabel, todayIndex } from '../timetable'
 import { Bar, Icon, type Route } from '../ui'
 
 const BOARD_FILTERS = ['전체', '일반', '장학', '생활관', '학부'] as const
+
+function CornerMealRow({ corner, slots, first }: { corner: string; slots: CornerSlot[]; first: boolean }) {
+  const [sel, setSel] = useState(slots.find((s) => s.slot === '점심')?.slot ?? slots[0].slot)
+  const active = slots.find((s) => s.slot === sel) ?? slots[0]
+
+  return (
+    <div style={first ? { marginTop: 13 } : { marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--main-ink)' }}>{corner}</span>
+        {slots.length > 1 && (
+          <div style={{ display: 'flex', gap: 4 }}>
+            {slots.map((s) => (
+              <button key={s.slot} onClick={() => setSel(s.slot)} className={`chip ${s.slot === active.slot ? 'on' : ''}`} style={{ height: 24, padding: '0 8px', fontSize: 10.5, borderRadius: 8 }}>{s.slot}</button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 4, fontSize: 14, lineHeight: 1.55 }}>{active.menu.join(' · ')}</div>
+    </div>
+  )
+}
 
 export default function Home({ go, openNotice }: { go: (r: Route) => void; openNotice: (n: FeedNotice) => void }) {
   const { student } = useSession()
@@ -114,19 +135,7 @@ export default function Home({ go, openNotice }: { go: (r: Route) => void; openN
               <div className="card-head">
                 <span className="card-title">오늘 식단</span>
               </div>
-              {todayMeals.map((m, i) => (
-                <div key={m.corner} style={i ? { marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line-2)' } : { marginTop: 13 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--main-ink)' }}>{m.corner}</div>
-                  <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {m.slots.map((s) => (
-                      <div key={s.slot} style={{ fontSize: 14, lineHeight: 1.55 }}>
-                        {m.slots.length > 1 && <span className="muted" style={{ marginRight: 6 }}>{s.slot}</span>}
-                        {s.menu.join(' · ')}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+              {todayMeals.map((m, i) => <CornerMealRow key={m.corner} corner={m.corner} slots={m.slots} first={i === 0} />)}
               {todayMeals.length === 0 && <div className="muted" style={{ fontSize: 13, marginTop: 13 }}>등록된 메뉴가 없습니다</div>}
               <button className="link" style={{ marginTop: 12 }} onClick={() => go('meals')}>식단표 전체 보기</button>
             </div>
