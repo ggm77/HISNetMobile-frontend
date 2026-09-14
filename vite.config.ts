@@ -14,6 +14,13 @@ export default defineConfig({
         // 로컬 dev 서버는 http://localhost 라 Secure 쿠키를 브라우저가 저장하지 않으므로,
         // 로컬 프록시를 통과하는 응답에서만 두 속성을 완화한다. 운영 빌드는 이 dev 서버 설정 자체가 적용되지 않는다.
         configure: (proxy) => {
+          // changeOrigin 은 Host 헤더만 바꾸고 Origin 헤더는 그대로 통과시킨다.
+          // 브라우저가 보낸 Origin: http://localhost:5173 이 그대로 백엔드까지 전달되면
+          // 백엔드의 CORS 허용 오리진 목록에 없어 403 으로 거부된다(자격 증명 오류인 401과 다름).
+          // 프록시를 통과할 때는 백엔드가 허용하는 오리진으로 덮어써서 이 문제를 피한다.
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('origin', 'https://hisnet.seohamin.com')
+          })
           proxy.on('proxyRes', (proxyRes) => {
             const setCookie = proxyRes.headers['set-cookie']
             if (setCookie) {
