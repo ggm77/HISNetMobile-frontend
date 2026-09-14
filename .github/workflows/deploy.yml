@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to server
+        uses: easingthemes/ssh-deploy@v5.1.2
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PORT: ${{ secrets.SSH_PORT }}
+          SOURCE: dist/
+          TARGET: /var/www/hisnet
+          # -rlgoDzvc: rsync recursive/preserve-links/perms/timestamps, compressed, verbose, checksum
+          # --delete: remove files on server that no longer exist in the new build (cleans up old hashed JS/CSS chunks)
+          # excludes .well-known so certbot/ACME webroot challenges aren't wiped by --delete
+          ARGS: "-rlgoDzvc -i --delete --exclude=.well-known"
