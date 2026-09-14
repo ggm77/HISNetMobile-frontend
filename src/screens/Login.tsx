@@ -41,7 +41,7 @@ export default function Login({ onLogin, onMeals }: { onLogin: () => void; onMea
           <label>
             <span className="field-label">히즈넷 아이디</span>
             <div className={`field ${error && !id ? 'error' : ''}`}>
-              <input value={id} onChange={(e) => setId(e.target.value)} inputMode="numeric" autoComplete="username" placeholder="22000000" />
+              <input value={id} onChange={(e) => setId(e.target.value)} autoComplete="username" placeholder="히즈넷 아이디" />
             </div>
           </label>
           <label>
