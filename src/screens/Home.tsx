@@ -6,7 +6,7 @@ import { itemsForSlot, slotOptions } from '../meals'
 import { fetchMergedFeed, type FeedNotice } from '../notices'
 import { useSession } from '../session'
 import { DAYS, flattenTimetable, periodLabel, todayIndex } from '../timetable'
-import { Bar, Bell, Icon, Segmented, type Route } from '../ui'
+import { Bar, Icon, Segmented, type Route } from '../ui'
 
 const BOARD_FILTERS = ['전체', '일반', '장학', '생활관', '학부'] as const
 
@@ -41,15 +41,8 @@ export default function Home({ go, openNotice }: { go: (r: Route) => void; openN
             <div className="h1">{student?.name ?? '…'}님</div>
             <div className="sub" style={{ marginTop: 3 }}>{student?.studentNo} · {student?.department} {student?.grade}학년</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Bell />
-            <button className="avatar" onClick={() => go('profile')}>{student?.name?.[0] ?? '?'}</button>
-          </div>
+          <button className="avatar" onClick={() => go('profile')}>{student?.name?.[0] ?? '?'}</button>
         </div>
-        <label className="search" style={{ marginTop: 14 }}>
-          <Icon name="search" />
-          <input placeholder="공지 · 과목 · 시설 검색" />
-        </label>
       </div>
 
       <div className="page">

@@ -68,11 +68,6 @@ export default function Login({ onLogin, onMeals }: { onLogin: () => void; onMea
         )}
 
         <button className="btn" type="submit" disabled={submitting} style={{ marginTop: 18 }}>{submitting ? '로그인 중…' : '로그인'}</button>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginTop: 16, fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)' }}>
-          <span>아이디 찾기</span>
-          <span style={{ color: 'var(--line-3)' }}>|</span>
-          <span>비밀번호 재설정</span>
-        </div>
 
         <div className="divider">로그인 없이 볼 수 있어요</div>
 

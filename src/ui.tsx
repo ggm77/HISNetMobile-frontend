@@ -81,31 +81,17 @@ export function Sidebar({ route, go, sessionMin }: { route: Route; go: (r: Route
 export function TopBar() {
   const { student } = useSession()
   return (
-    <header className="topbar">
-      <label className="search" style={{ width: 440, height: 44 }}>
-        <Icon name="search" />
-        <input placeholder="공지 · 과목 · 시설 검색" />
-      </label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-        <Bell />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div className="avatar">{student?.name?.[0] ?? '?'}</div>
-          <div>
-            <div style={{ fontSize: 13.5, fontWeight: 800 }}>{student?.name ?? '…'}</div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{student?.studentNo ?? ''}</div>
-          </div>
+    <header className="topbar" style={{ justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="avatar">{student?.name?.[0] ?? '?'}</div>
+        <div>
+          <div style={{ fontSize: 13.5, fontWeight: 800 }}>{student?.name ?? '…'}</div>
+          <div className="muted" style={{ fontSize: 11.5 }}>{student?.studentNo ?? ''}</div>
         </div>
       </div>
     </header>
   )
 }
-
-export const Bell = () => (
-  <button className="dot-wrap" aria-label="알림">
-    <Icon name="notifications" />
-    <span className="dot" />
-  </button>
-)
 
 export function Bar({ pct, tone, style }: { pct: number; tone?: 'soft' | 'fail'; style?: React.CSSProperties }) {
   return (

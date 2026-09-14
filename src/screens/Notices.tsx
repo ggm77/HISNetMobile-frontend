@@ -33,7 +33,6 @@ function Detail({ sel, n, onBack }: { sel: SelectedNotice; n: Notice; onBack?: (
           <button onClick={onBack} aria-label="목록으로" style={{ display: 'flex' }}><Icon name="arrow_back" size={24} /></button>
         ) : <span />}
         <div style={{ display: 'flex', gap: 16, color: 'var(--ink-2)' }}>
-          <button aria-label="북마크" style={{ display: 'flex' }}><Icon name="bookmark_border" size={22} /></button>
           <button aria-label="인쇄" className="desktop-only" style={{ display: 'flex' }} onClick={() => window.print()}><Icon name="print" size={22} /></button>
           <button aria-label="공유" style={{ display: 'flex' }} onClick={() => navigator.share?.({ title: n.subject })}><Icon name="ios_share" size={22} /></button>
         </div>
