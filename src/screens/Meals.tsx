@@ -64,7 +64,6 @@ export default function Meals({ back }: { back?: () => void }) {
               <div className="card" key={m.corner} style={{ padding: 17 }}>
                 <div className="card-head">
                   <span style={{ fontSize: 16, fontWeight: 800 }}>{m.corner}</span>
-                  {m.soloTag && <span className="pill" style={{ background: 'var(--fill)', color: 'var(--ink-2)' }}>{time}만 운영</span>}
                 </div>
                 <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {m.menu.map((x, i) => <div key={i} style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.5 }}>{x}</div>)}

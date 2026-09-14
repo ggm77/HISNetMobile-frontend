@@ -1,6 +1,6 @@
 import type { CafeteriaMeal } from './api'
 
-export type MealItem = { corner: string; menu: string[]; soloTag: boolean }
+export type MealItem = { corner: string; menu: string[] }
 
 export function slotOptions(cafeteria: CafeteriaMeal | undefined): string[] {
   if (!cafeteria) return []
@@ -15,7 +15,7 @@ export function itemsForSlot(cafeteria: CafeteriaMeal | undefined, slot: string)
     .map((c) => {
       const m = c.meals.find((x) => x.slot === slot)
       if (!m) return null
-      return { corner: c.name, menu: m.items, soloTag: c.meals.length === 1 }
+      return { corner: c.name, menu: m.items }
     })
     .filter((x): x is MealItem => x !== null)
 }
