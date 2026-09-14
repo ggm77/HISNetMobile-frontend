@@ -2,13 +2,47 @@ import { lazy, startTransition, Suspense, useEffect, useState } from 'react'
 import { ApiError, logout as apiLogout, me, studentInfo, type StudentInfo } from './api'
 import { clearCache } from './hooks'
 import { onIdle } from './lib'
-import type { FeedNotice, SelectedNotice } from './notices'
+import type { BoardKey, FeedNotice, SelectedNotice } from './notices'
 import Home from './screens/Home'
 import Login from './screens/Login'
 import { SessionContext } from './session'
 import { ErrorBoundary, Icon, LoadingCard, Sidebar, TabBar, TopBar, type Route } from './ui'
 
 const SESSION_MIN = 30
+
+// 화면(Route)마다 실제 주소창 URL이 대응되도록 하는 아주 얇은 라우터. 별도 라이브러리 없이
+// history API(pushState/popstate)만으로 구현한다 — 새로고침·뒤로가기·북마크가 모두 동작해야 하므로
+// 배포 서버(nginx 등)도 이 경로들을 전부 index.html 로 돌려주는 SPA 폴백이 되어 있어야 한다.
+const ROUTE_PATHS: Record<Route, string> = {
+  home: '/',
+  timetable: '/timetable',
+  grades: '/grades',
+  graduation: '/graduation',
+  notices: '/notices',
+  reserve: '/reserve',
+  myReservations: '/reserve/my',
+  meals: '/meals',
+  profile: '/profile',
+  academic: '/academic',
+}
+const PATH_ROUTES: Record<string, Route> = Object.fromEntries(
+  Object.entries(ROUTE_PATHS).map(([r, p]) => [p, r as Route]),
+)
+const routeFromPath = (pathname: string): Route => PATH_ROUTES[pathname] ?? 'home'
+
+function noticeToSearch(n: SelectedNotice) {
+  if (!n) return ''
+  const p = new URLSearchParams({ board: n.boardKey, id: n.id })
+  if (n.dept) p.set('dept', n.dept)
+  return `?${p}`
+}
+function noticeFromSearch(search: string): SelectedNotice {
+  const p = new URLSearchParams(search)
+  const board = p.get('board')
+  const id = p.get('id')
+  if (!board || !id) return null
+  return { boardKey: board as BoardKey, id, dept: p.get('dept') ?? undefined }
+}
 
 // 홈과 로그인은 첫 화면이라 메인 번들에 두고, 나머지 화면은 각각 별도 청크로 나눠 처음 열 때 받는다.
 // 첫 렌더 뒤 브라우저가 한가할 때 미리 받아 두므로(prefetch) 탭을 눌렀을 때는 대개 이미 캐시에 있다.
@@ -39,9 +73,11 @@ export default function App() {
   const [checking, setChecking] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [student, setStudent] = useState<StudentInfo | null>(null)
-  const [guestMeals, setGuestMeals] = useState(false)
-  const [route, setRoute] = useState<Route>('home')
-  const [notice, setNotice] = useState<SelectedNotice>(null)
+  const [guestMeals, setGuestMeals] = useState(() => window.location.pathname === '/meals')
+  const [route, setRoute] = useState<Route>(() => routeFromPath(window.location.pathname))
+  const [notice, setNotice] = useState<SelectedNotice>(() =>
+    routeFromPath(window.location.pathname) === 'notices' ? noticeFromSearch(window.location.search) : null,
+  )
   const [toastMsg, setToastMsg] = useState('')
   const [sessionMin, setSessionMin] = useState(SESSION_MIN)
 
@@ -53,6 +89,21 @@ export default function App() {
   }, [])
 
   useEffect(() => onIdle(prefetchScreens), [])
+
+  // 뒤로/앞으로가기: 주소만 바뀌고 컴포넌트 상태는 그대로이므로 직접 동기화해야 한다.
+  useEffect(() => {
+    const onPopState = () => {
+      const path = window.location.pathname
+      const r = routeFromPath(path)
+      startTransition(() => {
+        setRoute(r)
+        setNotice(r === 'notices' ? noticeFromSearch(window.location.search) : null)
+        setGuestMeals(path === '/meals')
+      })
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
 
   useEffect(() => {
     if (!authed) return
@@ -69,17 +120,27 @@ export default function App() {
     return () => clearInterval(t)
   }, [authed])
 
+  const pushUrl = (path: string) => {
+    if (window.location.pathname + window.location.search !== path) window.history.pushState(null, '', path)
+  }
   const go = (r: Route) => {
+    pushUrl(ROUTE_PATHS[r])
     startTransition(() => {
       setRoute(r)
       if (r !== 'notices') setNotice(null)
     })
     window.scrollTo(0, 0)
   }
+  const selectNotice = (n: SelectedNotice) => {
+    pushUrl(`/notices${noticeToSearch(n)}`)
+    setNotice(n)
+  }
   const openNotice = (n: FeedNotice) => {
+    const sel: SelectedNotice = { boardKey: n.boardKey, id: n.id, dept: n.dept }
+    pushUrl(`/notices${noticeToSearch(sel)}`)
     startTransition(() => {
       setRoute('notices')
-      setNotice({ boardKey: n.boardKey, id: n.id, dept: n.dept })
+      setNotice(sel)
     })
     window.scrollTo(0, 0)
   }
@@ -90,6 +151,7 @@ export default function App() {
   const doLogout = () => {
     apiLogout().catch(() => {})
     clearCache()
+    pushUrl(ROUTE_PATHS.home)
     setAuthed(false)
     setStudent(null)
     setRoute('home')
@@ -102,9 +164,14 @@ export default function App() {
       <ErrorBoundary>
         <Suspense fallback={<Splash />}>
           {guestMeals ? (
-            <div className="login" style={{ display: 'block', background: 'var(--bg)' }}><Meals back={() => setGuestMeals(false)} /></div>
+            <div className="login" style={{ display: 'block', background: 'var(--bg)' }}>
+              <Meals back={() => { pushUrl(ROUTE_PATHS.home); setGuestMeals(false) }} />
+            </div>
           ) : (
-            <Login onLogin={() => { setAuthed(true); setSessionMin(SESSION_MIN); go('home') }} onMeals={() => startTransition(() => setGuestMeals(true))} />
+            <Login
+              onLogin={() => { setAuthed(true); setSessionMin(SESSION_MIN); go('home') }}
+              onMeals={() => { pushUrl(ROUTE_PATHS.meals); startTransition(() => setGuestMeals(true)) }}
+            />
           )}
         </Suspense>
       </ErrorBoundary>
@@ -120,7 +187,7 @@ export default function App() {
     graduation: <Graduation back={toAcademic} />,
     profile: <Profile back={toAcademic} onLogout={doLogout} />,
     meals: <Meals back={() => go('home')} />,
-    notices: <Notices selected={notice} setSelected={setNotice} />,
+    notices: <Notices selected={notice} setSelected={selectNotice} />,
     reserve: <Reserve go={go} toast={toast} />,
     myReservations: <MyReservations back={() => go('reserve')} toast={toast} />,
   }[route]
