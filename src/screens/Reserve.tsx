@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import {
   ApiError,
   cancelReservation,
@@ -25,9 +25,9 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
   const [facilitySel, setFacilitySel] = useState<Facility | null>(null)
   const [day, setDay] = useState(0)
   const [range, setRange] = useState<[number, number] | null>(null)
+  const [anchor, setAnchor] = useState<number | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [booking, setBooking] = useState(false)
-  const dragging = useRef<number | null>(null)
 
   const cat = catSel && categories.some((c) => c.category === catSel) ? catSel : (categories[0]?.category ?? null)
   const currentCategory = categories.find((c) => c.category === cat)
@@ -42,30 +42,27 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
   const slots = activeDay?.slots ?? []
   const quota = avail?.quota ?? null
 
-  useEffect(() => {
-    const up = () => (dragging.current = null)
-    window.addEventListener('pointerup', up)
-    return () => window.removeEventListener('pointerup', up)
-  }, [])
-
-  const select = (from: number, to: number) => {
-    const [a, b] = from <= to ? [from, to] : [to, from]
+  // 첫 탭으로 시작 슬롯을 고르고, 다른 슬롯을 한 번 더 탭하면 그 사이로 범위가 넓어진다.
+  // 같은 슬롯을 다시 탭하면 선택이 취소된다.
+  const onSlotClick = (i: number) => {
+    if (slots[i]?.status !== 'AVAILABLE') return
+    if (anchor === i) {
+      setAnchor(null)
+      setRange(null)
+      return
+    }
+    if (anchor === null) {
+      setAnchor(i)
+      setRange([i, i])
+      return
+    }
+    const [a, b] = anchor <= i ? [anchor, i] : [i, anchor]
     let end = b
-    for (let i = a; i <= b; i++) if (slots[i]?.status !== 'AVAILABLE') { end = i - 1; break }
+    for (let s = a; s <= b; s++) if (slots[s]?.status !== 'AVAILABLE') { end = s - 1; break }
+    setAnchor(null)
     if (end < a) return
     const maxSlots = quota?.dailyRemainingMinutes ? Math.max(1, Math.floor(quota.dailyRemainingMinutes / 30)) : slots.length
     setRange([a, Math.min(end, a + maxSlots - 1)])
-  }
-
-  const onDown = (i: number) => {
-    if (slots[i]?.status !== 'AVAILABLE') return
-    dragging.current = i
-    setRange(range && range[0] === i && range[1] === i ? null : [i, i])
-  }
-  const onMove = (e: React.PointerEvent) => {
-    if (dragging.current === null) return
-    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-slot]')
-    if (el) select(dragging.current, Number(el.dataset.slot))
   }
 
   const start = range ? slots[range[0]].start : ''
@@ -80,6 +77,7 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
       await createReservation(facility.id, activeDay.date, start, end)
       setConfirm(false)
       setRange(null)
+      setAnchor(null)
       toast('예약이 신청되었습니다')
       reloadAvail()
     } catch (e) {
@@ -98,7 +96,7 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
           <UnderlineTabs
             options={categories.map((c) => c.category)}
             value={cat ?? categories[0].category}
-            onChange={(c) => { setCatSel(c); setFacilitySel(null); setDay(0); setRange(null) }}
+            onChange={(c) => { setCatSel(c); setFacilitySel(null); setDay(0); setRange(null); setAnchor(null) }}
             label={(c) => categories.find((x) => x.category === c)?.categoryName ?? c}
           />
         )}
@@ -110,7 +108,7 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
         {currentCategory && (
           <div className="chips">
             {currentCategory.facilities.map((f) => (
-              <button key={f.id} className={`chip main ${f.id === facility?.id ? 'on' : ''}`} style={{ height: 32, padding: '0 13px', fontSize: 12.5 }} onClick={() => { setFacilitySel(f); setDay(0); setRange(null) }}>{f.name}</button>
+              <button key={f.id} className={`chip main ${f.id === facility?.id ? 'on' : ''}`} style={{ height: 32, padding: '0 13px', fontSize: 12.5 }} onClick={() => { setFacilitySel(f); setDay(0); setRange(null); setAnchor(null) }}>{f.name}</button>
             ))}
           </div>
         )}
@@ -141,7 +139,7 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
         {days.length > 0 && (
           <div className="days">
             {days.map((d, i) => (
-              <button key={d.date} className={`day ${i === day ? 'on' : ''}`} onClick={() => { setDay(i); setRange(null) }}>
+              <button key={d.date} className={`day ${i === day ? 'on' : ''}`} onClick={() => { setDay(i); setRange(null); setAnchor(null) }}>
                 <small className={d.weekday === 'SAT' || d.weekday === 'SUN' ? 'weekend' : ''}>{WEEKDAY_KO[d.weekday] ?? d.weekday}</small>
                 <b>{Number(d.date.slice(8))}</b>
               </button>
@@ -156,15 +154,21 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
           <span><i style={{ background: 'var(--line-3)' }} />예약됨</span>
         </div>
 
+        {slots.length > 0 && (
+          <div className="muted" style={{ fontSize: 12, marginTop: -6 }}>
+            {anchor === null ? '시작 시간을 탭하세요' : '종료 시간을 탭하세요 (같은 칸을 다시 탭하면 취소)'}
+          </div>
+        )}
+
         {availLoading && <div className="muted" style={{ fontSize: 13, padding: '10px 0' }}>슬롯을 불러오는 중…</div>}
 
         {!availLoading && slots.length > 0 && (
-          <div className="slots" onPointerMove={onMove}>
+          <div className="slots">
             {slots.map((s, i) => {
               const sel = range && i >= range[0] && i <= range[1]
               const st = uiState(s.status)
               return (
-                <button key={s.start} data-slot={i} disabled={st !== 'free'} className={`slot ${sel ? 'sel' : st}`} onPointerDown={(e) => { (e.target as HTMLElement).releasePointerCapture?.(e.pointerId); onDown(i) }}>
+                <button key={s.start} disabled={st !== 'free'} className={`slot ${sel ? 'sel' : st}`} onClick={() => onSlotClick(i)}>
                   {s.start}
                 </button>
               )
@@ -175,7 +179,7 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
 
         <div className="book-bar">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 }}>
-            <span style={{ whiteSpace: 'nowrap', fontSize: 14, fontWeight: 800 }}>{range ? `${dateLabel} ${start} – ${end}` : '시간을 끌어서 고르세요'}</span>
+            <span style={{ whiteSpace: 'nowrap', fontSize: 14, fontWeight: 800 }}>{range ? `${dateLabel} ${start} – ${end}` : '위에서 시간을 선택하세요'}</span>
             {range && <span className="muted">{minutes}분</span>}
           </div>
           <button className="btn" style={{ height: 52, fontSize: 16 }} disabled={!range} onClick={() => setConfirm(true)}>예약 신청</button>

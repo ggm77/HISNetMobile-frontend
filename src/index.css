@@ -257,16 +257,15 @@ a { color: var(--main); text-decoration: none; }
 .day.on { background: var(--main); border-color: var(--main); }
 .day.on small { color: var(--on-main-sub); }
 .day.on b { color: #fff; }
-.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; touch-action: none; user-select: none; }
-.slot { height: 36px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
+.slot { height: 40px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .slot.taken { background: var(--line-3); border-color: var(--line-3); color: var(--ink-3); cursor: not-allowed; }
 .slot.mine { background: var(--main-10); border-color: var(--main-soft); color: var(--main-ink); font-weight: 800; cursor: default; }
 .slot.sel { background: var(--main); border-color: var(--main); color: #fff; font-weight: 800; }
 .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; font-weight: 700; color: var(--ink-3); }
 .legend span { display: flex; align-items: center; gap: 5px; }
 .legend i { width: 11px; height: 11px; border-radius: 4px; }
-.book-bar { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line-2); padding: 14px 20px 18px; margin: 0 -20px -96px; z-index: 4; }
-@media (min-width: 960px) { .book-bar { bottom: 0; margin: 0 -28px -26px; padding: 14px 28px 18px; border-radius: 0; } }
+.book-bar { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px 16px; }
 
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(22, 24, 29, 0.55); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 480px; background: var(--surface); border-radius: 30px 30px 0 0; padding: 12px 22px calc(26px + env(safe-area-inset-bottom)); animation: up 0.22s ease-out; }
