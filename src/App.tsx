@@ -1,18 +1,39 @@
-import { useEffect, useState } from 'react'
+import { lazy, startTransition, Suspense, useEffect, useState } from 'react'
 import { ApiError, logout as apiLogout, me, studentInfo, type StudentInfo } from './api'
 import { clearCache } from './hooks'
-import { AcademicHub, Graduation, Grades, Profile } from './screens/Academic'
+import { onIdle } from './lib'
+import type { FeedNotice, SelectedNotice } from './notices'
 import Home from './screens/Home'
 import Login from './screens/Login'
-import Meals from './screens/Meals'
-import Notices from './screens/Notices'
-import type { SelectedNotice } from './notices'
-import { MyReservations, Reserve } from './screens/Reserve'
 import { SessionContext } from './session'
-import Timetable from './screens/Timetable'
-import { Icon, Sidebar, TabBar, TopBar, type Route } from './ui'
+import { ErrorBoundary, Icon, LoadingCard, Sidebar, TabBar, TopBar, type Route } from './ui'
 
 const SESSION_MIN = 30
+
+// 홈과 로그인은 첫 화면이라 메인 번들에 두고, 나머지 화면은 각각 별도 청크로 나눠 처음 열 때 받는다.
+// 첫 렌더 뒤 브라우저가 한가할 때 미리 받아 두므로(prefetch) 탭을 눌렀을 때는 대개 이미 캐시에 있다.
+// 화면 전환은 startTransition 으로 감싸서, 청크가 아직 없으면 빈 화면 대신 이전 화면을 유지한 채 기다린다.
+const screens = {
+  timetable: () => import('./screens/Timetable'),
+  notices: () => import('./screens/Notices'),
+  reserve: () => import('./screens/Reserve'),
+  myReservations: () => import('./screens/MyReservations'),
+  meals: () => import('./screens/Meals'),
+  academic: () => import('./screens/AcademicHub'),
+  grades: () => import('./screens/Grades'),
+  graduation: () => import('./screens/Graduation'),
+  profile: () => import('./screens/Profile'),
+}
+const Timetable = lazy(screens.timetable)
+const Notices = lazy(screens.notices)
+const Reserve = lazy(screens.reserve)
+const MyReservations = lazy(screens.myReservations)
+const Meals = lazy(screens.meals)
+const AcademicHub = lazy(screens.academic)
+const Grades = lazy(screens.grades)
+const Graduation = lazy(screens.graduation)
+const Profile = lazy(screens.profile)
+const prefetchScreens = () => Object.values(screens).forEach((load) => load().catch(() => {}))
 
 export default function App() {
   const [checking, setChecking] = useState(true)
@@ -31,6 +52,8 @@ export default function App() {
       .finally(() => setChecking(false))
   }, [])
 
+  useEffect(() => onIdle(prefetchScreens), [])
+
   useEffect(() => {
     if (!authed) return
     studentInfo()
@@ -47,8 +70,17 @@ export default function App() {
   }, [authed])
 
   const go = (r: Route) => {
-    setRoute(r)
-    if (r !== 'notices') setNotice(null)
+    startTransition(() => {
+      setRoute(r)
+      if (r !== 'notices') setNotice(null)
+    })
+    window.scrollTo(0, 0)
+  }
+  const openNotice = (n: FeedNotice) => {
+    startTransition(() => {
+      setRoute('notices')
+      setNotice({ boardKey: n.boardKey, id: n.id, dept: n.dept })
+    })
     window.scrollTo(0, 0)
   }
   const toast = (s: string) => {
@@ -63,22 +95,25 @@ export default function App() {
     setRoute('home')
   }
 
-  if (checking) {
-    return (
-      <div className="login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="logo" style={{ width: 54, height: 54, borderRadius: 17, fontSize: 25 }}>H</div>
-      </div>
-    )
-  }
+  if (checking) return <Splash />
 
   if (!authed) {
-    if (guestMeals) return <div className="login" style={{ display: 'block', background: 'var(--bg)' }}><Meals back={() => setGuestMeals(false)} /></div>
-    return <Login onLogin={() => { setAuthed(true); setSessionMin(SESSION_MIN); go('home') }} onMeals={() => setGuestMeals(true)} />
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<Splash />}>
+          {guestMeals ? (
+            <div className="login" style={{ display: 'block', background: 'var(--bg)' }}><Meals back={() => setGuestMeals(false)} /></div>
+          ) : (
+            <Login onLogin={() => { setAuthed(true); setSessionMin(SESSION_MIN); go('home') }} onMeals={() => startTransition(() => setGuestMeals(true))} />
+          )}
+        </Suspense>
+      </ErrorBoundary>
+    )
   }
 
   const toAcademic = () => go('academic')
   const screen = {
-    home: <Home go={go} openNotice={(n) => { go('notices'); setNotice({ boardKey: n.boardKey, id: n.id, dept: n.dept }) }} />,
+    home: <Home go={go} openNotice={openNotice} />,
     timetable: <Timetable />,
     academic: <AcademicHub go={go} />,
     grades: <Grades back={toAcademic} />,
@@ -96,12 +131,24 @@ export default function App() {
         <Sidebar route={route} go={go} sessionMin={sessionMin} />
         <main className="main">
           <TopBar />
-          {sessionMin === 0 ? <SessionExpired onLogin={doLogout} onClose={() => setSessionMin(SESSION_MIN)} /> : screen}
+          <ErrorBoundary>
+            <Suspense fallback={<div className="page"><LoadingCard /></div>}>
+              {sessionMin === 0 ? <SessionExpired onLogin={doLogout} onClose={() => setSessionMin(SESSION_MIN)} /> : screen}
+            </Suspense>
+          </ErrorBoundary>
         </main>
         <TabBar route={route} go={go} />
         {toastMsg && <div className="toast">{toastMsg}</div>}
       </div>
     </SessionContext.Provider>
+  )
+}
+
+function Splash() {
+  return (
+    <div className="login" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="logo" style={{ width: 54, height: 54, borderRadius: 17, fontSize: 25 }}>H</div>
+    </div>
   )
 }
 

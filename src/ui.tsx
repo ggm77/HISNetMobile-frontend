@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Component, type ReactNode } from 'react'
 import type { IconName } from './icons'
 import { useSession } from './session'
 
@@ -133,3 +133,33 @@ export function UnderlineTabs<T extends string>({ options, value, onChange, labe
   )
 }
 
+export function LoadingCard() {
+  return <div className="card empty-state"><Icon name="hourglass_empty" /><div style={{ fontSize: 15, fontWeight: 800, marginTop: 12 }}>불러오는 중…</div></div>
+}
+
+export function ErrorCard({ message, reload }: { message: string; reload: () => void }) {
+  return (
+    <div className="card empty-state">
+      <Icon name="error" />
+      <div style={{ fontSize: 15, fontWeight: 800, marginTop: 12 }}>{message}</div>
+      <button className="btn sm" style={{ marginTop: 12 }} onClick={reload}>다시 시도</button>
+    </div>
+  )
+}
+
+// 화면 청크를 받지 못했거나 렌더 중 오류가 나면 앱 전체가 사라지는 대신 이 카드를 보여준다.
+// 실패한 청크는 다시 시도해도 같은 결과를 돌려주므로 새로고침으로 복구한다.
+export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    if (!this.state.failed) return this.props.children
+    return (
+      <div className="page">
+        <ErrorCard message="화면을 불러오지 못했습니다" reload={() => window.location.reload()} />
+      </div>
+    )
+  }
+}
