@@ -45,7 +45,7 @@ export default function Meals({ back }: { back?: () => void }) {
 
         {!loading && !error && (
           <>
-            {times.length > 0 && (
+            {times.length > 1 && (
               <div style={{ display: 'flex', gap: 6 }}>
                 {times.map((t) => (
                   <button key={t} onClick={() => setTimeSel(t)} className={`chip ${t === time ? 'on' : ''}`} style={{ flex: 1, height: 38, borderRadius: 12, justifyContent: 'center', fontSize: 13.5 }}>{t}</button>

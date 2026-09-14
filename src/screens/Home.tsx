@@ -116,7 +116,7 @@ export default function Home({ go, openNotice }: { go: (r: Route) => void; openN
             <div className="card">
               <div className="card-head">
                 <span className="card-title">오늘 식단</span>
-                {availTimes.length > 0 && <Segmented options={availTimes} value={activeTime} onChange={setTime} />}
+                {availTimes.length > 1 && <Segmented options={availTimes} value={activeTime} onChange={setTime} />}
               </div>
               {todayMeals.map((m, i) => (
                 <div key={m.corner} style={{ display: 'flex', gap: 12, ...(i ? { marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line-2)' } : { marginTop: 13 }) }}>
