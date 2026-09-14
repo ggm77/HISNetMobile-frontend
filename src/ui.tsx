@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { IconName } from './icons'
 import { useSession } from './session'
 
 
@@ -6,13 +7,13 @@ export type Route =
   | 'home' | 'timetable' | 'grades' | 'graduation' | 'notices'
   | 'reserve' | 'myReservations' | 'meals' | 'profile' | 'academic'
 
-export const Icon = ({ name, fill, size, color, className = '' }: { name: string; fill?: boolean; size?: number; color?: string; className?: string }) => (
+export const Icon = ({ name, fill, size, color, className = '' }: { name: IconName; fill?: boolean; size?: number; color?: string; className?: string }) => (
   <span className={`icon ${fill ? 'fill' : ''} ${className}`} style={{ fontSize: size, color }} aria-hidden>
     {name}
   </span>
 )
 
-const TABS: { route: Route; icon: string; label: string; match: Route[] }[] = [
+const TABS: { route: Route; icon: IconName; label: string; match: Route[] }[] = [
   { route: 'home', icon: 'home', label: '홈', match: ['home', 'meals'] },
   { route: 'timetable', icon: 'calendar_view_week', label: '시간표', match: ['timetable'] },
   { route: 'notices', icon: 'campaign', label: '공지', match: ['notices'] },
@@ -20,7 +21,7 @@ const TABS: { route: Route; icon: string; label: string; match: Route[] }[] = [
   { route: 'academic', icon: 'school', label: '학사', match: ['academic', 'grades', 'graduation', 'profile'] },
 ]
 
-const NAV: { route: Route; icon: string; label: string; badge?: number }[] = [
+const NAV: { route: Route; icon: IconName; label: string; badge?: number }[] = [
   { route: 'home', icon: 'home', label: '홈' },
   { route: 'timetable', icon: 'calendar_view_week', label: '시간표' },
   { route: 'grades', icon: 'bar_chart', label: '성적' },

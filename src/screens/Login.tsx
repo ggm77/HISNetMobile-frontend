@@ -10,7 +10,7 @@ export default function Login({ onLogin, onMeals }: { onLogin: () => void; onMea
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { data: mealData } = useFetch(fetchMeals, [])
+  const { data: mealData } = useFetch('meals', fetchMeals)
   const studentCafeteria = mealData?.cafeterias.find((c) => c.name === '학생식당')
   const lunch = itemsForSlot(studentCafeteria, '점심')
 

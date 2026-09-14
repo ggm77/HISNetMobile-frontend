@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { grades as fetchGrades, graduation as fetchGraduation, meals as fetchMeals, reservationsList, timetable as fetchTimetable } from '../api'
 import { useFetch } from '../hooks'
-import { boardTone, shortDate } from '../lib'
+import { boardTone, shortDate, useIsDesktop } from '../lib'
 import { cornerMeals, type CornerSlot } from '../meals'
-import { fetchMergedFeed, type FeedNotice } from '../notices'
+import { useMergedFeed, type FeedNotice } from '../notices'
 import { useSession } from '../session'
 import { DAYS, flattenTimetable, periodLabel, todayIndex } from '../timetable'
 import { Bar, Icon, type Route } from '../ui'
@@ -35,21 +35,23 @@ export default function Home({ go, openNotice }: { go: (r: Route) => void; openN
   const { student } = useSession()
   const [boardFilter, setBoardFilter] = useState<(typeof BOARD_FILTERS)[number]>('전체')
   const TODAY = todayIndex()
+  const isDesktop = useIsDesktop()
 
-  const { data: tt } = useFetch(fetchTimetable, [])
+  const { data: tt } = useFetch('timetable', fetchTimetable)
   const blocks = flattenTimetable(tt).filter((l) => l.day === TODAY).sort((a, b) => a.start - b.start)
   const next = blocks[0]
 
-  const { data: mealData } = useFetch(fetchMeals, [])
+  const { data: mealData } = useFetch('meals', fetchMeals)
   const studentCafeteria = mealData?.cafeterias.find((c) => c.name === '학생식당')
   const todayMeals = cornerMeals(studentCafeteria)
 
-  const { data: feed } = useFetch(() => fetchMergedFeed(student?.department), [student?.department])
+  const { feed } = useMergedFeed(student?.department)
   const filteredFeed = (feed ?? []).filter((n) => boardFilter === '전체' || n.boardLabel === boardFilter)
 
-  const { data: reservationData } = useFetch(() => reservationsList('active'), [])
-  const { data: gradeData } = useFetch(fetchGrades, [])
-  const { data: gradData } = useFetch(fetchGraduation, [])
+  // 예약·성적·졸업심사 카드는 데스크톱 폭에서만 보이므로(desktop-only) 모바일에서는 요청 자체를 하지 않는다.
+  const { data: reservationData } = useFetch(isDesktop ? 'reservations:active' : null, () => reservationsList('active'))
+  const { data: gradeData } = useFetch(isDesktop ? 'grades' : null, fetchGrades)
+  const { data: gradData } = useFetch(isDesktop ? 'graduation' : null, fetchGraduation)
 
   return (
     <>

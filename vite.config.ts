@@ -1,9 +1,21 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
+import { ICON_NAMES } from './src/icons.ts'
+
+// Material Symbols 전체 폰트는 5MB 가 넘는다. Google Fonts 의 icon_names 파라미터로 실제 쓰는 아이콘
+// (src/icons.ts)만 담은 서브셋(수십 KB)을 받도록 <link rel="stylesheet"> 를 index.html <head> 에 주입한다.
+function materialSymbolsSubset(): Plugin {
+  const names = [...new Set<string>(ICON_NAMES)].sort().join(',')
+  const href = `https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=${names}`
+  return {
+    name: 'material-symbols-subset',
+    transformIndexHtml: () => [{ tag: 'link', attrs: { rel: 'stylesheet', href }, injectTo: 'head' }],
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), materialSymbolsSubset()],
   server: {
     proxy: {
       '/api': {

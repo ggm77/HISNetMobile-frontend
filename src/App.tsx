@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError, logout as apiLogout, me, studentInfo, type StudentInfo } from './api'
+import { clearCache } from './hooks'
 import { AcademicHub, Graduation, Grades, Profile } from './screens/Academic'
 import Home from './screens/Home'
 import Login from './screens/Login'
@@ -56,6 +57,7 @@ export default function App() {
   }
   const doLogout = () => {
     apiLogout().catch(() => {})
+    clearCache()
     setAuthed(false)
     setStudent(null)
     setRoute('home')

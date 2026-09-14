@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { grades as fetchGrades, graduation as fetchGraduation } from '../api'
 import { isGraduationPass, parseNumeric } from '../graduation'
 import { useFetch } from '../hooks'
+import type { IconName } from '../icons'
 import { useSession } from '../session'
 import { Bar, Icon, PageHeader, type Route } from '../ui'
 
@@ -20,9 +21,9 @@ function ErrorCard({ message, reload }: { message: string; reload: () => void })
 
 export function AcademicHub({ go }: { go: (r: Route) => void }) {
   const { student } = useSession()
-  const { data: g } = useFetch(fetchGrades, [])
-  const { data: grad } = useFetch(fetchGraduation, [])
-  const items: { r: Route; icon: string; label: string; sub: string }[] = [
+  const { data: g } = useFetch('grades', fetchGrades)
+  const { data: grad } = useFetch('graduation', fetchGraduation)
+  const items: { r: Route; icon: IconName; label: string; sub: string }[] = [
     { r: 'grades', icon: 'bar_chart', label: '성적', sub: g?.summary ? `누적 평점 ${g.summary.gpa ?? '-'} · ${g.summary.earnedCredits ?? '-'}학점` : '불러오는 중…' },
     { r: 'graduation', icon: 'workspace_premium', label: '졸업심사', sub: grad ? (grad.available ? grad.finalVerdict ?? '-' : '조회 불가') : '불러오는 중…' },
     { r: 'meals', icon: 'restaurant', label: '식단표', sub: '학생식당 · 한동라운지' },
@@ -52,8 +53,8 @@ export function AcademicHub({ go }: { go: (r: Route) => void }) {
 export function Grades({ back }: { back: () => void }) {
   const [open, setOpen] = useState<number[]>([0])
   const toggle = (i: number) => setOpen((o) => (o.includes(i) ? o.filter((x) => x !== i) : [...o, i]))
-  const { data, loading, error, reload } = useFetch(fetchGrades, [])
-  const { data: grad } = useFetch(fetchGraduation, [])
+  const { data, loading, error, reload } = useFetch('grades', fetchGrades)
+  const { data: grad } = useFetch('graduation', fetchGraduation)
   const summary = data?.summary
   const required = grad?.available ? grad.requiredCredits : null
   const byType = Object.entries(summary?.creditsByType ?? {}).sort((a, b) => b[1] - a[1])
@@ -140,7 +141,7 @@ export function Grades({ back }: { back: () => void }) {
 }
 
 export function Graduation({ back }: { back: () => void }) {
-  const { data, loading, error, reload } = useFetch(fetchGraduation, [])
+  const { data, loading, error, reload } = useFetch('graduation', fetchGraduation)
 
   return (
     <>

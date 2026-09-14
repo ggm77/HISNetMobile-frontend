@@ -8,7 +8,7 @@ const ROW = 50 // 46px 칸 + 4px 간격
 
 export default function Timetable() {
   const [view, setView] = useState<'grid' | 'list'>('grid')
-  const { data, loading, error, reload } = useFetch(fetchTimetable, [])
+  const { data, loading, error, reload } = useFetch('timetable', fetchTimetable)
   const TODAY = todayIndex()
   const blocks = flattenTimetable(data)
   const courses = [...new Map(blocks.map((l) => [l.title, l])).values()]

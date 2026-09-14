@@ -11,7 +11,7 @@ import {
   type ReservationStatus,
   type Slot,
 } from '../api'
-import { useFetch } from '../hooks'
+import { invalidate, useFetch } from '../hooks'
 import { Bar, Icon, PageHeader, UnderlineTabs, type Route } from '../ui'
 
 const WEEKDAY_KO: Record<string, string> = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
@@ -19,7 +19,7 @@ const WEEKDAY_KO: Record<string, string> = { MON: '월', TUE: '화', WED: '수',
 const uiState = (s: Slot['status']) => (s === 'AVAILABLE' ? 'free' : s === 'RESERVED_MINE' ? 'mine' : 'taken')
 
 export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: string) => void }) {
-  const { data: catalog } = useFetch(fetchFacilities, [])
+  const { data: catalog } = useFetch('facilities', fetchFacilities)
   const categories = catalog?.categories ?? []
   const [catSel, setCatSel] = useState<FacilityCategory | null>(null)
   const [facilitySel, setFacilitySel] = useState<Facility | null>(null)
@@ -33,10 +33,7 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
   const currentCategory = categories.find((c) => c.category === cat)
   const facility = facilitySel && currentCategory?.facilities.some((f) => f.id === facilitySel.id) ? facilitySel : (currentCategory?.facilities[0] ?? null)
 
-  const { data: avail, loading: availLoading, reload: reloadAvail } = useFetch(
-    () => (facility ? facilityAvailability(facility.id) : Promise.resolve(null)),
-    [facility?.id],
-  )
+  const { data: avail, loading: availLoading, reload: reloadAvail } = useFetch(facility ? `availability:${facility.id}` : null, () => facilityAvailability(facility!.id))
   const days = avail?.days ?? []
   const activeDay = days[day]
   const slots = activeDay?.slots ?? []
@@ -79,10 +76,15 @@ export function Reserve({ go, toast }: { go: (r: Route) => void; toast: (s: stri
       setRange(null)
       setAnchor(null)
       toast('예약이 신청되었습니다')
+      // 다른 시설·날짜의 슬롯과 쿼터, 내 예약 목록도 달라졌으므로 캐시를 오래된 것으로 표시한다.
+      invalidate('availability')
+      invalidate('reservations')
       reloadAvail()
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'RESERVATION_SLOT_UNAVAILABLE') toast('선택한 시간대는 예약할 수 없습니다')
-      else toast(e instanceof Error ? e.message : '예약에 실패했습니다')
+      if (e instanceof ApiError && e.code === 'RESERVATION_SLOT_UNAVAILABLE') {
+        toast('선택한 시간대는 예약할 수 없습니다')
+        reloadAvail() // 그 사이 다른 사람이 잡은 슬롯을 반영한다
+      } else toast(e instanceof Error ? e.message : '예약에 실패했습니다')
       setConfirm(false)
     } finally {
       setBooking(false)
@@ -222,13 +224,15 @@ const STATUSES: { label: string; value: ReservationStatus }[] = [
 export function MyReservations({ back, toast }: { back?: () => void; toast: (s: string) => void }) {
   const [tab, setTab] = useState<ReservationStatus>('active')
   const [pending, setPending] = useState<number | null>(null)
-  const { data, loading, reload } = useFetch(() => reservationsList(tab), [tab])
+  const { data, loading, reload } = useFetch(`reservations:${tab}`, () => reservationsList(tab))
   const list = data?.reservations ?? []
 
   const cancel = async (code: number) => {
     try {
       await cancelReservation(code)
       toast('예약이 취소되었습니다')
+      invalidate('reservations')
+      invalidate('availability')
       reload()
     } catch (e) {
       toast(e instanceof Error ? e.message : '취소에 실패했습니다')

@@ -30,7 +30,7 @@ function CornerCard({ corner, slots }: { corner: string; slots: CornerSlot[] }) 
 }
 
 export default function Meals({ back }: { back?: () => void }) {
-  const { data, loading, error, reload } = useFetch(fetchMeals, [])
+  const { data, loading, error, reload } = useFetch('meals', fetchMeals)
   const cafeterias = data?.cafeterias ?? []
   const [placeSel, setPlaceSel] = useState<string | null>(null)
 

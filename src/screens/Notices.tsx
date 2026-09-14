@@ -3,7 +3,7 @@ import type { Notice, NoticeBoard } from '../api'
 import { deptNoticeAttachmentUrl, deptNoticeDetail, deptNoticesList, noticeAttachmentUrl, noticeDetail, noticesList } from '../api'
 import { useFetch } from '../hooks'
 import { boardTone, useIsDesktop } from '../lib'
-import { deptCodeFor, fetchMergedFeed, type FeedNotice, type SelectedNotice } from '../notices'
+import { deptCodeFor, useMergedFeed, withBoard, withDept, type FeedNotice, type SelectedNotice } from '../notices'
 import { useSession } from '../session'
 import { Icon, PageHeader } from '../ui'
 
@@ -73,38 +73,42 @@ export default function Notices({ selected, setSelected }: { selected: SelectedN
   const [q, setQ] = useState('')
   const isDesktop = useIsDesktop()
   const deptCode = deptCodeFor(student?.department)
+  const all = board === '전체'
+  const key = TAB_TO_KEY[board]
 
   const changeBoard = (b: BoardTab) => {
     setBoard(b)
     setPage(1)
   }
 
-  const { data: listData, loading, error } = useFetch<ListResult>(async () => {
-    if (board === '전체') {
-      const notices = await fetchMergedFeed(student?.department)
-      return { notices, page: 1, totalPages: 1, hasNext: false, hasPrevious: false }
-    }
-    const key = TAB_TO_KEY[board]
+  // "전체" 탭은 홈과 같은 병합 피드(캐시 공유), 나머지 탭은 게시판별 페이지 목록.
+  const merged = useMergedFeed(student?.department, all)
+  const paged = useFetch<ListResult>(all ? null : `notices:${key}:${key === 'department' ? (deptCode ?? '') : ''}:${page}`, async () => {
     if (key === 'department') {
       if (!deptCode) throw new Error('학부 정보를 확인할 수 없어 학부공지를 불러올 수 없습니다')
       const res = await deptNoticesList(deptCode, page)
-      return { ...res, notices: res.notices.map((n) => ({ ...n, boardKey: 'department' as const, boardLabel: '학부', dept: student?.department ?? undefined })) }
+      return { ...res, notices: withDept(res.notices, student?.department ?? '') }
     }
     const res = await noticesList(key as NoticeBoard, page)
-    return { ...res, notices: res.notices.map((n) => ({ ...n, boardKey: key as NoticeBoard, boardLabel: { general: '일반', scholarship: '장학', dormitory: '생활관' }[key as NoticeBoard] })) }
-  }, [board, page, deptCode, student?.department])
+    return { ...res, notices: withBoard(res.notices, key as NoticeBoard) }
+  })
+  const listData: ListResult | null = all
+    ? merged.feed && { notices: merged.feed, page: 1, totalPages: 1, hasNext: false, hasPrevious: false }
+    : paged.data
+  const loading = all ? merged.loading : paged.loading
+  const error = all ? merged.error : paged.error
 
   const list = (listData?.notices ?? []).filter((n) => n.subject.includes(q))
 
-  const { data: detail, loading: detailLoading } = useFetch<Notice | null>(async () => {
-    if (!selected) return null
-    if (selected.boardKey === 'department') {
-      const dept = selected.dept ? deptCodeFor(selected.dept) : deptCode
-      if (!dept) throw new Error('학부 정보를 확인할 수 없습니다')
-      return deptNoticeDetail(dept, selected.id)
+  const detailDept = selected?.boardKey === 'department' ? (selected.dept ? deptCodeFor(selected.dept) : deptCode) : undefined
+  const { data: detail, loading: detailLoading } = useFetch<Notice>(selected ? `notice:${selected.boardKey}:${detailDept ?? ''}:${selected.id}` : null, async () => {
+    const sel = selected!
+    if (sel.boardKey === 'department') {
+      if (!detailDept) throw new Error('학부 정보를 확인할 수 없습니다')
+      return deptNoticeDetail(detailDept, sel.id)
     }
-    return noticeDetail(selected.boardKey as NoticeBoard, selected.id)
-  }, [selected?.boardKey, selected?.id])
+    return noticeDetail(sel.boardKey, sel.id)
+  })
 
   if (selected && !isDesktop) {
     return (
