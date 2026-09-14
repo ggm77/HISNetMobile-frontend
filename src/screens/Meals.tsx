@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { meals as fetchMeals } from '../api'
 import { useFetch } from '../hooks'
-import { itemsForSlot, slotOptions } from '../meals'
+import { cornerMeals } from '../meals'
 import { Icon, PageHeader, UnderlineTabs } from '../ui'
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토']
@@ -10,14 +10,10 @@ export default function Meals({ back }: { back?: () => void }) {
   const { data, loading, error, reload } = useFetch(fetchMeals, [])
   const cafeterias = data?.cafeterias ?? []
   const [placeSel, setPlaceSel] = useState<string | null>(null)
-  const [timeSel, setTimeSel] = useState<string | null>(null)
 
   const place = placeSel && cafeterias.some((c) => c.name === placeSel) ? placeSel : (cafeterias[0]?.name ?? null)
   const current = cafeterias.find((c) => c.name === place)
-  const times = slotOptions(current)
-  const time = timeSel && times.includes(timeSel) ? timeSel : (times.includes('점심') ? '점심' : (times[0] ?? null))
-
-  const list = time ? itemsForSlot(current, time) : []
+  const corners = cornerMeals(current)
   const date = data?.date ? new Date(data.date) : null
   const label = date ? `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} (${WEEK[date.getDay()]})` : ''
 
@@ -45,28 +41,27 @@ export default function Meals({ back }: { back?: () => void }) {
 
         {!loading && !error && (
           <>
-            {times.length > 1 && (
-              <div style={{ display: 'flex', gap: 6 }}>
-                {times.map((t) => (
-                  <button key={t} onClick={() => setTimeSel(t)} className={`chip ${t === time ? 'on' : ''}`} style={{ flex: 1, height: 38, borderRadius: 12, justifyContent: 'center', fontSize: 13.5 }}>{t}</button>
-                ))}
-              </div>
-            )}
-
-            {list.length === 0 && (
+            {corners.length === 0 && (
               <div className="card empty-state">
                 <Icon name="no_meals" />
                 <div style={{ fontSize: 15, fontWeight: 800, marginTop: 12 }}>등록된 메뉴가 없습니다</div>
               </div>
             )}
 
-            {list.map((m) => (
-              <div className="card" key={m.corner} style={{ padding: 17 }}>
+            {corners.map((c) => (
+              <div className="card" key={c.corner} style={{ padding: 17 }}>
                 <div className="card-head">
-                  <span style={{ fontSize: 16, fontWeight: 800 }}>{m.corner}</span>
+                  <span style={{ fontSize: 16, fontWeight: 800 }}>{c.corner}</span>
                 </div>
-                <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {m.menu.map((x, i) => <div key={i} style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.5 }}>{x}</div>)}
+                <div style={{ marginTop: 13, display: 'flex', flexDirection: 'column', gap: c.slots.length > 1 ? 16 : 8 }}>
+                  {c.slots.map((s) => (
+                    <div key={s.slot}>
+                      {c.slots.length > 1 && <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--main-ink)', marginBottom: 6 }}>{s.slot}</div>}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {s.menu.map((x, i) => <div key={i} style={{ fontSize: 15.5, fontWeight: 600, lineHeight: 1.5 }}>{x}</div>)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

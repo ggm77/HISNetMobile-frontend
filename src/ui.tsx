@@ -122,16 +122,6 @@ export function PageHeader({ title, back, right, children, flat, mobileOnly = tr
   )
 }
 
-export function Segmented<T extends string>({ options, value, onChange }: { options: readonly T[]; value: T; onChange: (v: T) => void }) {
-  return (
-    <div className="seg">
-      {options.map((o) => (
-        <button key={o} className={o === value ? 'on' : ''} onClick={() => onChange(o)}>{o}</button>
-      ))}
-    </div>
-  )
-}
-
 export function UnderlineTabs<T extends string>({ options, value, onChange, label }: { options: readonly T[]; value: T; onChange: (v: T) => void; label?: (v: T) => string }) {
   return (
     <div className="utabs">

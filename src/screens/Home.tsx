@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { grades as fetchGrades, graduation as fetchGraduation, meals as fetchMeals, reservationsList, timetable as fetchTimetable } from '../api'
 import { useFetch } from '../hooks'
 import { boardTone, shortDate } from '../lib'
-import { itemsForSlot, slotOptions } from '../meals'
+import { cornerMeals } from '../meals'
 import { fetchMergedFeed, type FeedNotice } from '../notices'
 import { useSession } from '../session'
 import { DAYS, flattenTimetable, periodLabel, todayIndex } from '../timetable'
-import { Bar, Icon, Segmented, type Route } from '../ui'
+import { Bar, Icon, type Route } from '../ui'
 
 const BOARD_FILTERS = ['전체', '일반', '장학', '생활관', '학부'] as const
 
@@ -20,11 +20,8 @@ export default function Home({ go, openNotice }: { go: (r: Route) => void; openN
   const next = blocks[0]
 
   const { data: mealData } = useFetch(fetchMeals, [])
-  const [time, setTime] = useState('점심')
   const studentCafeteria = mealData?.cafeterias.find((c) => c.name === '학생식당')
-  const availTimes = slotOptions(studentCafeteria)
-  const activeTime = availTimes.includes(time) ? time : (availTimes[0] ?? time)
-  const todayMeals = itemsForSlot(studentCafeteria, activeTime)
+  const todayMeals = cornerMeals(studentCafeteria)
 
   const { data: feed } = useFetch(() => fetchMergedFeed(student?.department), [student?.department])
   const filteredFeed = (feed ?? []).filter((n) => boardFilter === '전체' || n.boardLabel === boardFilter)
@@ -116,12 +113,18 @@ export default function Home({ go, openNotice }: { go: (r: Route) => void; openN
             <div className="card">
               <div className="card-head">
                 <span className="card-title">오늘 식단</span>
-                {availTimes.length > 1 && <Segmented options={availTimes} value={activeTime} onChange={setTime} />}
               </div>
               {todayMeals.map((m, i) => (
-                <div key={m.corner} style={{ display: 'flex', gap: 12, ...(i ? { marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line-2)' } : { marginTop: 13 }) }}>
-                  <span style={{ flex: 'none', width: 76, fontSize: 12.5, fontWeight: 800, color: 'var(--main-ink)' }}>{m.corner}</span>
-                  <span style={{ flex: 1, fontSize: 14, lineHeight: 1.55 }}>{m.menu.join(' · ')}</span>
+                <div key={m.corner} style={i ? { marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line-2)' } : { marginTop: 13 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--main-ink)' }}>{m.corner}</div>
+                  <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {m.slots.map((s) => (
+                      <div key={s.slot} style={{ fontSize: 14, lineHeight: 1.55 }}>
+                        {m.slots.length > 1 && <span className="muted" style={{ marginRight: 6 }}>{s.slot}</span>}
+                        {s.menu.join(' · ')}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
               {todayMeals.length === 0 && <div className="muted" style={{ fontSize: 13, marginTop: 13 }}>등록된 메뉴가 없습니다</div>}
